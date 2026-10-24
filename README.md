@@ -1,19 +1,34 @@
-# Rute Nusa — Travel Mobil Antar Kota
+# Rute Nusa — Website Pemasaran Travel Mobil
 
-Situs informasi dan pemesanan travel mobil antar kota. Seluruh pemesanan
-diarahkan ke WhatsApp admin — tidak ada akun, checkout, pembayaran, atau
-database di dalam aplikasi ini.
+Website informasi untuk layanan travel mobil antar kota. Seluruh pemesanan
+diarahkan ke WhatsApp dengan pesan yang sudah terisi otomatis — tidak ada
+checkout, pembayaran, akun, atau database.
+
+![Stack](https://img.shields.io/badge/Next.js-16-black) ![React](https://img.shields.io/badge/React-19-blue) ![TypeScript](https://img.shields.io/badge/TypeScript-5-3178c6) ![Tailwind](https://img.shields.io/badge/Tailwind_CSS-4-38bdf8)
 
 ## Stack
 
-- **Next.js 16.4** (App Router, Turbopack, Cache Components)
-- **React 19** + **TypeScript**
-- **Tailwind CSS v4**
-- Tanpa backend, tanpa database
+| Lapisan | Teknologi | Alasan |
+| --- | --- | --- |
+| Framework | Next.js 16 (App Router, Cache Components) | Halaman statis/SEO, routing per armada & rute |
+| UI | React 19 + TypeScript | Komponen aman tipe, minim JS klien |
+| Styling | Tailwind CSS 4 | Design token dan utility konsisten |
+| Font | `next/font` — Plus Jakarta Sans + Fraunces | Font di-host sendiri, tanpa request ke Google |
+| Data | File TypeScript di `src/lib` | Cukup untuk konten yang berubah jarang |
+| Pemesanan | `wa.me` deep link | Tanpa backend; admin mengonfirmasi manual |
+| Deploy | Vercel (disarankan) atau Node host | Tidak butuh database |
 
-## Menjalankan lokal
+## Halaman
 
-Prasyarat: **Node.js 20.9+** (disarankan 22 LTS).
+- `/` — hero, papan keberangkatan, pencarian rute, armada unggulan, rute populer, cara pesan, ulasan, FAQ
+- `/armada` — daftar armada + panduan memilih
+- `/armada/[slug]` — detail armada, fasilitas, tarif, skema Product
+- `/rute` — daftar 10 rute + filter kota asal (query `?dari=`)
+- `/rute/[slug]` — detail rute, jadwal, tarif, rute terkait
+- `/tentang`, `/faq`, `/kontak`
+- `sitemap.xml`, `robots.txt`, `opengraph-image`, `icon.svg`, halaman 404
+
+## Menjalankan
 
 ```bash
 npm install
@@ -21,106 +36,102 @@ cp .env.example .env.local   # Windows: copy .env.example .env.local
 npm run dev
 ```
 
-Buka <http://localhost:3000>.
-
-Build produksi:
+Buka http://localhost:3000.
 
 ```bash
+npm run lint
 npm run build
 npm start
 ```
 
-Lint dan type-check:
+## Konfigurasi
 
-```bash
-npm run lint
-npx tsc --noEmit
+Salin `.env.example` menjadi `.env.local`:
+
+```env
+NEXT_PUBLIC_WHATSAPP_NUMBER=6281234567890
+NEXT_PUBLIC_SITE_URL=https://rutenusa.id
 ```
 
-## Environment variables
+- `NEXT_PUBLIC_WHATSAPP_NUMBER` — nomor tujuan semua tombol. Format internasional
+  tanpa `+` dan tanpa spasi (`628…`). Teks tampilan (`+62 812-…`) dihitung otomatis.
+- `NEXT_PUBLIC_SITE_URL` — dipakai untuk canonical, Open Graph, sitemap, dan JSON-LD.
+  Wajib diisi dengan domain produksi sebelum deploy.
 
-| Variable | Wajib | Contoh | Keterangan |
-| --- | --- | --- | --- |
-| `NEXT_PUBLIC_WHATSAPP_NUMBER` | Ya | `6281234567890` | Nomor WhatsApp tujuan semua tombol. Format internasional, tanpa `+`, spasi, atau tanda hubung. |
-| `NEXT_PUBLIC_SITE_URL` | Ya | `https://rutenusa.id` | URL publik situs. Dipakai untuk `metadataBase`, canonical, Open Graph, `sitemap.xml`, `robots.txt`, dan JSON-LD. Tanpa garis miring di akhir. |
+> Variabel `NEXT_PUBLIC_*` dibaca saat build. Setelah mengubahnya, jalankan
+> `npm run build` ulang (atau redeploy).
 
-Keduanya diawali `NEXT_PUBLIC_`, artinya nilainya **di-inline saat build**.
-Setelah mengubah nilainya di Vercel, lakukan **redeploy** agar perubahan ikut
-terpakai.
+## Mengubah konten
 
-## Deploy ke Vercel
+| Yang ingin diubah | File |
+| --- | --- |
+| Nama brand, nomor WA, alamat, jam, sosial media | `src/lib/site.ts` |
+| Armada (kapasitas, fasilitas, tarif, slug) | `src/lib/fleet.ts` |
+| Rute, durasi, jam berangkat, tarif | `src/lib/routes.ts` |
+| FAQ | `src/lib/faq.ts` |
+| Ulasan & statistik | `src/lib/testimonials.ts` |
+| Warna, font, bayangan, animasi | `src/app/globals.css` (`@theme`) |
+| Hero & section beranda | `src/app/page.tsx` |
+| Pesan WhatsApp otomatis | `waMessages` dan `bookingMessage` di `src/lib/site.ts` |
 
-### Opsi A — lewat GitHub (disarankan)
+Semua harga memakai `formatRupiah()` sehingga otomatis berformat `Rp 150.000`.
+Halaman armada dan rute memakai `generateStaticParams()` — tambahkan item baru di
+file data, lalu build ulang; halaman detail, sitemap, dan metadata ikut terbentuk.
 
-1. Push project ini ke repository GitHub/GitLab/Bitbucket.
-2. Buka <https://vercel.com/new>, lalu import repository tersebut.
-3. Vercel mendeteksi framework **Next.js** secara otomatis. Biarkan:
-   - Build Command: `npm run build`
-   - Output Directory: `.next`
-   - Install Command: `npm install`
-4. Tambahkan environment variables di **Project → Settings → Environment
-   Variables**:
-   - `NEXT_PUBLIC_WHATSAPP_NUMBER`
-   - `NEXT_PUBLIC_SITE_URL` (isi dengan domain produksi, mis.
-     `https://rutenusa.id`)
-5. Klik **Deploy**.
-6. Setelah domain final terpasang, pastikan `NEXT_PUBLIC_SITE_URL` sudah
-   memakai domain tersebut, lalu **Redeploy** (Deployments → ⋯ → Redeploy).
+## Alur pemesanan
 
-### Opsi B — lewat Vercel CLI
+1. Pengunjung memilih rute/armada atau mengisi form pencarian.
+2. Tombol membuka `https://wa.me/<nomor>?text=...` dengan rute, tanggal, jumlah
+   penumpang, dan permintaan konfirmasi.
+3. Admin membalas jadwal, titik jemput, dan total biaya.
+4. Pembayaran DP dilakukan di luar situs (transfer/QRIS/tunai).
 
-```bash
-npm i -g vercel
-vercel login
-vercel link
+Tidak ada data pengguna yang disimpan di server. Detail perjalanan hanya dikirim
+ke WhatsApp setelah pengunjung menekan tombol.
 
-# tambahkan env untuk production
-vercel env add NEXT_PUBLIC_WHATSAPP_NUMBER production
-vercel env add NEXT_PUBLIC_SITE_URL production
-
-vercel --prod
-```
-
-Untuk preview deployment, jalankan `vercel` tanpa `--prod`.
-
-### Checklist sebelum go-live
-
-- [ ] `NEXT_PUBLIC_WHATSAPP_NUMBER` sudah memakai nomor asli (bukan contoh).
-- [ ] `NEXT_PUBLIC_SITE_URL` sudah memakai domain final.
-- [ ] `npm run build` sukses tanpa error.
-- [ ] Tombol WhatsApp membuka chat dengan pesan yang terisi.
-- [ ] `/sitemap.xml` dan `/robots.txt` dapat diakses.
-- [ ] Cek satu halaman rute dan satu halaman armada di domain produksi.
-
-## Struktur project
+## Struktur
 
 ```
 src/
-├── app/
-│   ├── page.tsx                 # Beranda
-│   ├── rute/                    # Daftar rute + detail per rute
-│   ├── armada/                  # Daftar armada + detail per armada
-│   ├── tentang/                 # Tentang kami
-│   ├── faq/                     # Pertanyaan umum
-│   ├── kontak/                  # Kontak & lokasi
-│   ├── layout.tsx               # Metadata global, header, footer
-│   ├── sitemap.ts               # Sitemap dinamis
-│   ├── robots.ts                # robots.txt
-│   └── not-found.tsx            # Halaman 404
-├── components/                  # Komponen UI & ikon
-└── lib/                         # Data rute, armada, FAQ, situs
+├─ app/                 # route, metadata, sitemap, OG image
+│  ├─ armada/[slug]/    # detail armada (static params)
+│  ├─ rute/[slug]/      # detail rute (static params)
+│  └─ globals.css       # design token Tailwind 4
+├─ components/          # header, footer, kartu, form, ilustrasi SVG
+└─ lib/                 # data konten, helper WhatsApp, JSON-LD
 ```
 
-## SEO
+Ilustrasi kendaraan dibuat sebagai SVG (`components/vehicle-art.tsx`) agar tidak
+bergantung pada stok foto dan tetap tajam di semua ukuran. Ganti dengan foto asli
+lewat `next/image` bila sudah tersedia.
 
-- Metadata per halaman (title, description, canonical, Open Graph).
-- JSON-LD: `TravelAgency`, `WebSite`, `BreadcrumbList`, `FAQPage`, `Service`,
-  dan `Product`.
-- Sitemap mencakup semua halaman statis, rute, dan armada.
+## Deploy
 
-## Catatan
+**Vercel** — import repo, tambahkan dua environment variable di atas, deploy.
+Cache Components dan Partial Prefetching aktif secara default di `next.config.ts`.
 
-- Nomor WhatsApp dan URL situs dibaca dari environment variables; jangan
-  menaruh kredensial apa pun di repo ini.
-- Semua konten (rute, tarif, armada, FAQ, testimoni) berada di `src/lib/` dan
-  aman diubah tanpa menyentuh komponen.
+Untuk VPS/Node:
+
+```bash
+npm ci
+npm run build
+npm start
+```
+
+Jalankan di belakang reverse proxy (Nginx/Caddy) dengan HTTPS. Jangan gunakan
+`next export` — fitur Cache Components dan image optimization membutuhkan server
+Node.
+
+## Sebelum go-live
+
+- [ ] Ganti nomor WhatsApp placeholder dengan nomor bisnis asli.
+- [ ] Ganti alamat, email, dan tautan sosial media placeholder.
+- [ ] Sesuaikan tarif, jadwal, dan fasilitas dengan kondisi nyata.
+- [ ] Ganti ulasan contoh dengan ulasan asli yang sudah diizinkan.
+- [ ] Isi `NEXT_PUBLIC_SITE_URL` dengan domain produksi.
+- [ ] Ganti ilustrasi dengan foto armada asli bila ada.
+- [ ] Verifikasi bisnis di Google Business Profile dan tautkan ke halaman kontak.
+- [ ] Tambahkan analytics (Vercel Analytics/Plausible) bila diperlukan.
+
+> Semua nama, tarif, jadwal, alamat, dan ulasan di repo ini adalah konten contoh.
+> Jangan tayangkan sebelum disesuaikan dengan data bisnis yang sebenarnya.
